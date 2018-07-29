@@ -15,7 +15,7 @@ const CSVtoTable = ( csvText ) =>
           .map( line => line.split(',') );  // カンマで分割
 
 // 部分文字列一致判定
-const submatch = ( target, key ) => ( target.indexOf( key ) !== -1 );
+const submatch = ( target, key ) => ( (target || '').indexOf( key ) !== -1 );
 
 // 文字列配列strArrayが各クエリ文字列queriesを含むか判定
 const filterFn = (strArray, ...queries) =>
