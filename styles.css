@@ -1,0 +1,90 @@
+
+* {
+  font-family: "Helvetica","Arial",sans-serif;
+  box-sizing: border-box;
+}
+
+input[type=number] {
+  text-align: right;
+}
+
+.body {
+  margin: 0;
+  padding: 20px;
+  background-color: #F3EBAA;
+  min-height: 100vh;
+}
+
+.margined-element {
+  margin: 10px;
+}
+
+.mdl-textfield.mdl-js-textfield {
+  width: auto;
+}
+
+.mdl-button.mdl-js-button.mdl-button--raised.page-button {
+  background: white;
+  color: rgba(0,0,0,.54);
+  min-width : 30px;
+  margin: 0;
+  border-right: 1px solid rgba(0,0,0,.06);
+}
+.mdl-button.mdl-js-button.mdl-button--raised.page-button.selected {
+  background: blue;
+}
+
+.pager {
+  display: flex;
+  flex-direction: row;
+}
+.items-per-page-wrapper,.page-number-wrapper {
+  margin: 0 20px;
+}
+
+
+
+table.data-table {
+  position: relative;
+  border: 1px solid rgba(0,0,0,.12);
+  white-space: nowrap;
+  background-color: white;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+table.data-table--shadow3px {
+  box-shadow :
+  0 3px 4px 0 rgba(0,0,0,.14),
+  0 3px 3px -2px rgba(0,0,0,.2),
+  0 1px 8px 0 rgba(0,0,0,.12)
+}
+
+.data-table th,
+.data-table td {
+  position: relative;
+  height: 40px;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  box-sizing: border-box;
+  padding: 6px 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.data-table th {
+  text-overflow: ellipsis;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: 0;
+  font-size: 14px;
+  color: rgba(0,0,0,.54);
+}
+
+.data-table.data-table--vertical-line th,
+.data-table.data-table--vertical-line td {
+  border: 1px solid rgba(0,0,0,.06);
+}
+
+.data-table tbody:not(.no-hover-effect) tr:hover {
+  background: rgba(0,0,0,0.06);
+}
+
