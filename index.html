@@ -26,7 +26,7 @@
         </div>
       </div>
       <div class="margined-element page-number-wrapper">
-        Page at (1-<span id="page-length"></span>): 
+        Page at (1-<span id="page-length">1</span>): 
         <div class="mdl-textfield mdl-js-textfield">
           <input class="mdl-textfield__input" id="page-number"
             type="number" min="1" max="100" value="1">
@@ -38,7 +38,6 @@
     </div>
 
     <div class="margined-element">
-      <span id="nof-items">0</span> items
       <span id="range"></span>
     </div>
 
@@ -58,9 +57,9 @@
   </div>
 
   <script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js"></script>
-
-  <script src="./js/tableApp.js"></script>
-  <!-- <script src="./js/tableApp_rxjs.js"></script> -->
+  <script src="./js/common.js"></script>
+  <!-- <script src="./js/tableApp.js"></script> -->
+  <script src="./js/tableApp_rxjs.js"></script>
 </body>
 
 </html>

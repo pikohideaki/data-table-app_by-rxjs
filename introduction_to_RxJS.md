@@ -38,6 +38,7 @@ const { map, startWith, debounceTime, withLatestFrom } = rxjs.operators;
         * 依存している変数の値の更新を芋づる式に行わせることで記述量を減らす
     * データの加工が直感的に行える
         * 素朴な実装だと複雑で直感的でない処理も、RxJSを使えばオペレータ一つで行えるケースも
+    * ロジックと表示処理を分離できる
 * jsの基本的な構文だけしか知らない人向け
 * RxJSの各クラスや関数自体の具体的な実装には触れず、ブラックボックスとする
 
@@ -54,14 +55,15 @@ const csvText$ = fromEvent( req, 'load' )  // 'load'イベントからObservable
                            startWith('') );
 ```
 
-CSVファイルの中身
+CSVファイルの中身（一部）
 
 ```txt
-Helaina Cunnell,hcunnell0@va.gov,Female
-Wenda Teacy,wteacy1@4shared.com,Female
-Fidelia Clayworth,fclayworth2@biblegateway.com,Female
-Carlynne Duesbury,cduesbury3@nba.com,Female
-Burton Bricknall,bbricknall4@altervista.org,Male
+1,Helaina Cunnell,hcunnell0@va.gov,Female
+2,Wenda Teacy,wteacy1@4shared.com,Female
+3,Fidelia Clayworth,fclayworth2@biblegateway.com,Female
+4,Carlynne Duesbury,cduesbury3@nba.com,Female
+5,Burton Bricknall,bbricknall4@altervista.org,Male
+6,Liana Hearnden,lhearnden5@google.ca,Female
 
 ...
 
