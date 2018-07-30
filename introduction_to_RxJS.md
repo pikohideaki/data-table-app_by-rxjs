@@ -25,39 +25,57 @@ RxJSを利用することには以下のような利点があります
 * ロジックと表示処理を分離できる
 
 これらを理解するために、次節で説明するデータテーブルアプリケーションを実装します。
-
-
+比較のために、まずRxJSを使わずに実装し、続いてRxJSを使って実装します。
 
 キーワード：
 RxJS, Observable, JavaScript, リアクティブプログラミング
 
 
-## Data Table App
+## DataTableApp
 
 今回は例として、以下のリンク先のような
-ページネーションとフィルタ機能の付いたデータテーブルを実装します。
+ページネーション機能付きのデータテーブル(DataTableApp)を実装します。
 
-[data-table-app](https://codepen.io/pikohideaki/full/LrLzLX/)
+[DataTableApp](https://codepen.io/pikohideaki/full/LrLzLX/)
 
+### 仕様
 
+データテーブルの仕様は以下の通りです。
 
-## 実装
+* 表データはCSVファイル
+    'https://dl.dropboxusercontent.com/s/d76vdmr3jafwg3j/testdata.csv'
+    をhttpリクエストで取得したもの。
+    内容は「名前」「Eメールアドレス」「性別」の3列からなるテーブル
+* ページネーション機能：
+    * ページ番号を指定すると該当する範囲のデータを切り出し（slice）表示する
+    * 1ページあたりの表示行数を指定できる（デフォルトは50行）
+* その他細かい機能
+    * ページ番号や表示行数を指定するテキストボックスの値を短時間に連続して変更しても
+        何度もテーブル部分の表示更新処理が行われないように、
+        テキストボックス入力イベントの発生時の処理の間引きを行う
+        （この間引き処理を行わないと、テーブルデータが巨大な場合に負荷がかかってしまう）
+    * フィルタや表示行数変更により全ページ数が変わったときにはページ番号を1にリセットする
+        （例えば1ページ100行表示・8ページ目を選択中に
+        1ページ100行表示→200行表示と変更すると、
+        全ページ数は5となり
+        ページ番号が8のままだと存在しないページを選択したままになってしまう）
 
+このテーブルアプリのデータの処理の流れは次の図のようになります。
 
-### RxJSの手軽な導入方法
+![data_flow_after](./figures/data_flow.png)
 
-1. index.html に以下の1行を追加
-
-```html
-<script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js"></script>
-```
-
-2. JavaScriptのソースコード内で以下のように必要なものをimportする
-
-```js
-const { Observable, fromEvent, combineLatest, merge } = rxjs;
-const { map, startWith, debounceTime, withLatestFrom } = rxjs.operators;
-```
+このデータテーブルアプリケーションでは、
+まずhttp requestでCSVファイルを取得します。
+取得したCSVテキストは関数`CSVtoTable`により`table`に変換されます。
+`table`は文字列を要素とする二次元配列です。
+`table`の用意ができたら、
+1ページに表示する行数`itemsPerPage`とページ番号`currentPage`の値に従って
+現在のページに該当する部分を切り出したデータ`tableSliced`を作ります。
+`tableSliced`が最終的に画面に表示されるデータで、更新されたときには常に表示の更新を行います。
+1ページに表示する行数`itemsPerPage`のテキストボックスの値が変更されたら
+`pageLength`と`tableSliced`を更新します。
+ページ番号`currentPage`のテキストボックスの値が変更されたら`tableSliced`を更新します。
+`pageLength`が変化したとき・不正な値の場合は`currentPage`を`1`にリセットします。
 
 
 ### 入力データ
@@ -76,22 +94,13 @@ CSVファイルの中身（一部）
 
 ```
 
-データテーブルの仕様
 
-* テーブルデータはCSVファイル 'https://dl.dropboxusercontent.com/s/d76vdmr3jafwg3j/testdata.csv' をhttpリクエストで取得したものとする
-    * 内容は「名前」「Eメールアドレス」「性別」の3列からなるテーブルデータ
-* リアルタイムフィルタリング機能：
-    「名前」「Eメールアドレス」「性別」の各列に対し、リアルタイムなフィルタリングができる（各列の一番上の行のテキストボックスに文字列を入力すると、即座にその文字列を含む行のみに絞って表示する）
-* ページネーション機能：
-    * ページ番号を指定すると該当する範囲のデータのみ表示する
-    * 1ページあたりの表示行数を指定できる（デフォルトは50行）
-* その他
-    * フィルタや表示行数変更により全ページ数が変わったときには選択ページ番号を1にリセットする
-    （例えば1ページ100行表示・8ページ目を選択中に
-    1ページ100行表示→200行表示と変更すると、
-    全ページ数は5となり
-    選択ページ番号が8のままだと存在しないページを選択したままになってしまう）
 
+
+
+
+
+## 実装
 
 
 ### JavaScriptの構文についての補足
@@ -130,19 +139,253 @@ CSVファイルの中身（一部）
 
 
 
+### 共通定義
+
+RxJS不使用版・RxJS使用版で共用するindex.htmlとJavaScript(common.js)を示します。
 
 
+#### index.html
 
+説明に必要な部分のみ載せます。
+
+```html
+...
+
+    <!-- 1ページあたりの表示行数とページの指定 -->
+    <div class="pager">
+      <div class="margined-element items-per-page-wrapper">
+        Items per page (1-1000) : 
+        <div class="mdl-textfield mdl-js-textfield">
+          <input class="mdl-textfield__input" id="items-per-page"
+            type="number" min="1" max="1000" value="50">
+          <label class="mdl-textfield__label" for="items-per-page">
+            items per page
+          </label>
+        </div>
+      </div>
+      <div class="margined-element current-page-wrapper">
+        Page at (1-<span id="page-length">1</span>): 
+        <div class="mdl-textfield mdl-js-textfield">
+          <input class="mdl-textfield__input" id="current-page"
+            type="number" min="1" max="100" value="1">
+          <label class="mdl-textfield__label" for="current-page">
+            page
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="margined-element">
+      <span id="range"></span>
+    </div>
+
+    <!-- テーブル部分 -->
+    <table id="data-table"
+        class='data-table shadow3px vertical-line'>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>FullName</th>
+          <th>Email Address</th>
+          <th>Gender</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- jsで書き換え -->
+      </tbody>
+    </table>
+
+...
+```
+
+#### common.js
+
+RxJS不使用版・RxJS使用版で共用する定数や関数を定義します。
+
+* 表データCSVファイルのURL
 
 ```js
-const req = new XMLHttpRequest();
 const url = 'https://dl.dropboxusercontent.com/s/d76vdmr3jafwg3j/testdata.csv';
-req.open('get', url);  // リクエストを初期化
-req.send();  // リクエストの送信
-const csvText$ = fromEvent( req, 'load' )  // 'load'イベントからObservableを作成
-                    .pipe( map( event => event.target.responseText ),
-                           startWith('') );
 ```
+
+* テーブルを表示
+
+```js
+const printTable = ( tableData ) => {
+  const htmlStr = tableData.map( line =>
+          '<tr>' + line.map( item => `<td>${item}</td>` ).join('') + '</tr>' )
+        .join('\n');
+
+  const $table = document.getElementById('data-table');  // テーブル要素を取得
+  const $tbody = $table.getElementsByTagName('tbody')[0];  // tbody部分を取り出す
+  $tbody.innerHTML = htmlStr;  // htmlを書き換え
+};
+```
+
+* csv文字列から2次元テーブルを作成
+
+```js
+const CSVtoTable = ( csvText ) =>
+    csvText.replace(/\n+$/g, '')  // 末尾の改行は削除
+          .split('\n')  // => 改行ごとに分割
+          .map( line => line.split(',') );  // カンマで分割
+```
+
+* テーブルデータと1ページあたりの表示行数からページ数を計算
+
+```js
+const getPageLength = (tableLength, itemsPerPage) =>
+  Math.ceil( tableLength / itemsPerPage );  // 端数切り上げ
+```
+
+* 1ページ表示行数とページ番号を受け取ってテーブルの現在のページ部分の範囲のインデックスを計算し、
+    その範囲を表すオブジェクト { begin: Number, end: Number } を返す。
+
+```js
+const getRange = (itemsPerPage, currentPage) => ({
+  begin: itemsPerPage * (currentPage - 1),
+  end:   itemsPerPage * currentPage
+});
+```
+
+
+
+### RxJSを使わない実装
+
+RxJSを使わない普通のJavaScriptだけの実装例を以下に示します。
+
+---
+
+まず、各データに対応する変数を宣言します。
+
+```js
+let itemsPerPage = 50;  // 1ページに表示する列数
+let currentPage = 1;    // 現在のページ番号
+let pageLength = 0;     // ページ数
+
+let table = [];         // テーブルデータ
+let tableSliced = [];   // tableの現在のページ部分
+```
+
+---
+
+データの更新処理を行う関数を2つ定義します。
+
+```js
+
+// pageLengthの更新
+const updatePageLength = () => {
+  pageLength = getPageLength( table.length, itemsPerPage ); // 端数切り上げ
+  currentPage = 1;  // リセット
+
+  // 表示処理
+  document.getElementById('page-length').innerText = (pageLength || 0);
+  document.getElementById('current-page').setAttribute('max', (pageLength || 1) );
+
+  document.getElementById('current-page').value = (currentPage || 1);
+};
+
+// tableSlicedの更新
+const updateSlicedTable = () => {
+  const range = getRange( (itemsPerPage || 50), (currentPage || 1) );
+
+  tableSliced = table.slice( range.begin, range.end );  // 更新
+
+  // 表示処理
+  document.getElementById('range').innerText
+    = `(${range.begin + 1}-${range.end}) of ${table.length} items`;
+
+  printTable( tableSliced );
+};
+```
+
+--- 
+
+CSVファイル取得時の処理を登録します。
+CSVファイルのダウンロードが完了したら`event => {...}`が実行されます。
+（httpリクエスト送信部分の詳細は分からなければ読み飛ばしてください）
+
+```js
+{
+  const req = new XMLHttpRequest();
+  req.open('get', url);  // リクエストを初期化
+  req.send();  // リクエストの送信
+  req.addEventListener('load', event => {
+    const csvString = event.target.responseText;  // 取得したデータからのcsvTextの取り出し
+    table = CSVtoTable( csvString );
+    updatePageLength();
+    updateSlicedTable();
+  }); 
+}
+```
+
+1ページあたりの表示行数を指定するテキストボックスの入力時の処理を登録します。
+テキストボックスに入力があるたびに`event => {...}`が実行されます。
+間引き処理のためにだいぶ読みづらくなっていますが、やっていることは間引き処理です。
+テキストボックス入力があると、
+`clearTimeout`により前回予約した処理をキャンセルし、
+`setTimeout`により300ミリ秒後に処理を予約しなおす、
+ということが行われるので、300ミリ秒入力が止んだときに初めて
+`itemsPerPage`の更新・`updatePageLength()`・`updateSlicedTable()`が実行される、
+という仕組みになっています。
+
+```js
+{
+  let timerId;
+  document.getElementById('items-per-page')  // items-per-pageの入力欄
+    .addEventListener('input', event => {
+      clearTimeout(timerId);  // 前回の予約をキャンセル
+      timerId = setTimeout( () => {  // 処理を予約し予約番号をtimerIdに控える
+        itemsPerPage = event.target.valueAsNumber;  // テキストボックス内の値を数値として取出す
+        updatePageLength();
+        updateSlicedTable();
+      }, 300 );
+  });
+}
+```
+
+---
+
+同様に、現在のページを指定するテキストボックスの入力時の処理を登録します。
+
+```js
+{
+  let timerId;
+  document.getElementById('current-page')  // current-pageの入力欄
+    .addEventListener('input', event => {
+      clearTimeout(timerId);  // 前回の予約をキャンセル
+      timerId = setTimeout( () => {  // 処理を予約し予約番号をtimerIdに控える
+        currentPage = event.target.valueAsNumber;  // テキストボックス内の値を数値として取出す
+        updateSlicedTable();
+      }, 300 );
+  });
+}
+```
+
+
+
+### RxJSの導入
+
+
+#### RxJSの手軽な導入方法
+
+1. index.html に以下の1行を追加
+
+```html
+<script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js"></script>
+```
+
+2. JavaScriptのソースコード内で必要なものをimportする
+
+```js
+const { Observable, fromEvent, combineLatest, merge } = rxjs;
+const { map, startWith, debounceTime, withLatestFrom } = rxjs.operators;
+```
+
+
+### RxJSを使った実装
+
+
 
 
 
@@ -178,4 +421,47 @@ RxJSについて以下のようなメリットが挙げられます。
     がとても読みづらいコードになっていた
     * ［RxJS使用］`pipe`メソッドで`decounceTime(300)`を挟むだけでよい。
 
+
+
+
+
+
+## おわりに
+
+今回はただのhtmlやJavaScriptを直接編集して実装しましたが、
+規模が大きくなってくる場合は何かフレームワークを使った方が
+より効率よく実装できると思います。
+
+例えばAngularではテンプレート（htmlファイル）内でasync pipeというものを使って
+テンプレート内でsubscribe処理を行うことができるため、
+JavaScript部分がロジックの実装に集中できるようになります。
+
+
+
+## 補足
+
+* 今回のソースコードを手元で動かしてみたい場合は
+    [こちら](https://dl.dropboxusercontent.com/s/2avbobjiissm378/DataTableApp_by_rxjs.zip)
+    からダウンロードしてください。
+    index.html末尾のJavaScriptのソースコードを読み込む部分のコメントアウトを切り替えるようになっています。
+
+
+
+## リンク （2018/6/26時点）
+
+* [RxJS](https://rxjs-dev.firebaseapp.com/)
+
+* [RxJS Github](https://github.com/ReactiveX/rxjs)
+
+* [RxJS Marbles](http://rxmarbles.com/)
+    RxJSのオペレータの動作を視覚的に学べるサイト
+
+* [Angular 日本語ドキュメンテーション](https://angular.jp/)
+
+* [mockadoo](https://mockaroo.com/)
+    CSVダミーデータの生成
+
+* [Material Design Lite](https://getmdl.io/components/index.html#textfields-section)
+    * テキストボックスのデザインに使ったライブラリ
+    （index.htmlでcssとJavaScriptのソースコードを読み込むだけで使用できます）。
 

@@ -14,6 +14,7 @@
 
   <div class="margined-element">
 
+    <!-- 1ページあたりの表示行数とページの指定 -->
     <div class="pager">
       <div class="margined-element items-per-page-wrapper">
         Items per page (1-1000) : 
@@ -25,12 +26,12 @@
           </label>
         </div>
       </div>
-      <div class="margined-element page-number-wrapper">
+      <div class="margined-element current-page-wrapper">
         Page at (1-<span id="page-length">1</span>): 
         <div class="mdl-textfield mdl-js-textfield">
-          <input class="mdl-textfield__input" id="page-number"
+          <input class="mdl-textfield__input" id="current-page"
             type="number" min="1" max="100" value="1">
-          <label class="mdl-textfield__label" for="page-number">
+          <label class="mdl-textfield__label" for="current-page">
             page
           </label>
         </div>
@@ -41,6 +42,7 @@
       <span id="range"></span>
     </div>
 
+    <!-- テーブル部分 -->
     <table id="data-table"
         class='data-table shadow3px vertical-line'>
       <thead>
@@ -52,6 +54,7 @@
         </tr>
       </thead>
       <tbody>
+        <!-- jsで書き換え -->
       </tbody>
     </table>
   </div>

@@ -34,31 +34,34 @@ const itemsPerPage$
 
 // ページ数
 const pageLength$
-  = combineLatest( table$, itemsPerPage$, getPageLength )
+  = combineLatest(
+        table$.map( table => table.length ),
+        itemsPerPage$,
+        getPageLength )
       .pipe( startWith(0) );
 
 
-// 現在のページ番号
-const pageNumber$
+// ページ番号
+const currentPage$
   = merge(
-      fromEvent( document.getElementById('page-number'), 'input' )
+      fromEvent( document.getElementById('current-page'), 'input' )
         .pipe( map( event => event.target.valueAsNumber ),  // テキストボックス内の値を数値として取出す
                withLatestFrom( pageLength$ ),
-               map( ([pageNumber, pageLength]) =>
-                 ( 1 <= pageNumber && pageNumber <= pageLength ? pageNumber : 1) ),  // 範囲外のページを指定したときは1に修正する
+               map( ([currentPage, pageLength]) =>
+                 ( 1 <= currentPage && currentPage <= pageLength ? currentPage : 1) ),  // 範囲外のページを指定したときは1に修正する
                debounceTime(300)
         ),
       pageLength$.pipe( map( _ => 1 ) )
     ).pipe( startWith(1) );
 
 
-// 現在のページの範囲
+// 表示するページの範囲
 const range$
-  = combineLatest( itemsPerPage$, pageNumber$,
-      (itemsPerPage, pageNumber) => getRange(itemsPerPage, pageNumber) );
+  = combineLatest( itemsPerPage$, currentPage$,
+      (itemsPerPage, currentPage) => getRange(itemsPerPage, currentPage) );
 
 
-// tableの現在のページ部分
+// tableの表示するページ部分
 const tableSliced$
   = range$.pipe( withLatestFrom( table$ ),
       map( ([range, table]) => table.slice( range.begin, range.end ) ) );
@@ -69,17 +72,17 @@ const tableSliced$
   // ページ数を表示
   pageLength$.subscribe( pageLength => {
     document.getElementById('page-length').innerText = (pageLength || 0);
-    document.getElementById('page-number').setAttribute('max', (pageLength || 1));
+    document.getElementById('current-page').setAttribute('max', (pageLength || 1));
   });
 
   // ページ番号を指定するテキストボックスの値を更新
-  pageNumber$.subscribe( pageNumber => {
-    document.getElementById('page-number').valueAsNumber = (pageNumber || 1);
+  currentPage$.subscribe( currentPage => {
+    document.getElementById('current-page').valueAsNumber = (currentPage || 1);
   });
 
   // テーブルを表示
   tableSliced$.subscribe( tableSliced => {
-    printTable( document.getElementById('data-table'), tableSliced );
+    printTable( tableSliced );
   });
 
   range$.pipe( withLatestFrom( table$ ) ).subscribe( ([range, table]) => {
