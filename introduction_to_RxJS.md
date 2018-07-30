@@ -102,6 +102,9 @@ CSVファイルの中身（一部）
 
 ## 実装
 
+具体的な実装について説明します。
+RxJS不使用版・使用版の両方を実装し、後で両者を比較します。
+
 
 ### JavaScriptの構文についての補足
 
@@ -141,7 +144,7 @@ CSVファイルの中身（一部）
 
 ### 共通定義
 
-RxJS不使用版・RxJS使用版で共用するindex.htmlとJavaScript(common.js)を示します。
+RxJS不使用版・RxJS使用版で共用するindex.htmlとJavaScript(common.js)を説明します。
 
 
 #### index.html
