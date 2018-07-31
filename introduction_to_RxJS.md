@@ -127,8 +127,8 @@ RxJS不使用版・使用版の両方を実装し、後で両者を比較しま�
 * 文字列クラスメソッド
     * `split`：文字列の分割と配列化。
         例）`"aaa,bbb,ccc".split(',')`の結果は`["aaa","bbb","ccc"]`
-    * `replace`：正規表現にマッチする部分を置換。
-        例）`"aaabbb".replace(/ab/,'cc')`の結果は`"aaccbb"`
+    * `replace`：正規表現に最初にマッチする部分を置換。
+        例）`"aaabbb".replace(/aa/,'cc')`の結果は`"ccabbb"`
     * `indexOf`：部分文字列が最初に現れるインデックスを返す。存在しなければ`-1`を返す。
         例）`abcdef.indexOf('cd')`の結果は`2`、
             `abcdef.indexOf('g')`の結果は`-1`。
@@ -141,10 +141,21 @@ RxJS不使用版・使用版の両方を実装し、後で両者を比較しま�
         例）`Math.ceil(2.4)`は`3`
 
 
+### 構成
+
+サンプルアプリケーションは以下のファイルからなります。
+
+* index.html
+* styles.css
+* js
+    * common.js （共通定義）
+    * tableApp.js （RxJS不使用版）
+    * tableApp_rxjs.js （RxJS版）
+
 
 ### 共通定義
 
-RxJS不使用版・RxJS使用版で共用するindex.htmlとJavaScript(common.js)を説明します。
+RxJS不使用版・RxJS使用版で共用するindex.htmlとcommon.jsを説明します。
 
 
 #### index.html
