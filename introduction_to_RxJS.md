@@ -43,10 +43,6 @@ RxJS, Observable, JavaScript, リアクティブプログラミング
 
 データテーブルの仕様は以下の通りです。
 
-* 表データはCSVファイル
-    'https://dl.dropboxusercontent.com/s/d76vdmr3jafwg3j/testdata.csv'
-    をhttpリクエストで取得したもの。
-    内容は「名前」「Eメールアドレス」「性別」の3列からなるテーブル
 * ページネーション機能：
     * ページ番号を指定すると該当する範囲のデータを切り出し（slice）表示する
     * 1ページあたりの表示行数を指定できる（デフォルトは50行）
@@ -63,20 +59,26 @@ RxJS, Observable, JavaScript, リアクティブプログラミング
 
 このテーブルアプリのデータの処理の流れは次の図のようになります。
 
-![data_flow_after](./figures/data_flow.png)
+![data_flow](./figures/data_flow.png)
 
-このデータテーブルアプリケーションでは、
-まずhttp requestでCSVファイルを取得します。
-取得したCSVテキストは関数`CSVtoTable`により`table`に変換されます。
-`table`は文字列を要素とする二次元配列です。
-`table`の用意ができたら、
-1ページに表示する行数`itemsPerPage`とページ番号`currentPage`の値に従って
-現在のページに該当する部分を切り出したデータ`tableSliced`を作ります。
-`tableSliced`が最終的に画面に表示されるデータで、更新されたときには常に表示の更新を行います。
-1ページに表示する行数`itemsPerPage`のテキストボックスの値が変更されたら
-`pageLength`と`tableSliced`を更新します。
-ページ番号`currentPage`のテキストボックスの値が変更されたら`tableSliced`を更新します。
-`pageLength`が変化したとき・不正な値の場合は`currentPage`を`1`にリセットします。
+このデータテーブルアプリケーションは以下のように動作します。
+
+* データの取得→表示
+    1. まずhttp requestでCSVファイルを取得します。
+        * 表データはCSVファイル
+        'https://dl.dropboxusercontent.com/s/d76vdmr3jafwg3j/testdata.csv'
+        * 内容は「名前」「Eメールアドレス」「性別」の3列からなる表データ
+    2. 取得したCSVテキストは関数`CSVtoTable`により`table`に変換されます。
+        `table`は文字列を要素とする二次元配列です。
+    3. `table`の用意ができたら、
+        1ページに表示する行数`itemsPerPage`とページ番号`currentPage`の値に従って
+        現在のページに該当する部分を切り出したデータ`tableSliced`を作ります。
+    4. `tableSliced`を表示します。以降、`tableSliced`が更新されたときには常に表示の更新を行います。
+* ページネーション機能
+    * 1ページに表示する行数`itemsPerPage`のテキストボックスの値が変更されたら
+        ページ数`pageLength`と`tableSliced`を更新します。
+    * ページ番号`currentPage`のテキストボックスの値が変更されたら`tableSliced`を更新します。
+    * `pageLength`が変化したとき・不正な値の場合は`currentPage`を`1`にリセットします。
 
 
 ### 入力データ
