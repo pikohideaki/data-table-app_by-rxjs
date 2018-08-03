@@ -1,0 +1,492 @@
+<h1>RxJSの紹介</h1>
+<h2>RxJSとは</h2>
+<ul>
+<li><strong>R</strong>eactive E<strong>x</strong>tension for <strong>J</strong>ava<strong>S</strong>cript<br/>
+リアクティブプログラミング用のJavaScriptのライブラリ</li>
+
+</ul>
+<h2>この記事について</h2>
+<p>本記事は、リアクティブプログラミングを知らない人向けに、
+RxJSなどのリアクティブプログラミング用ライブラリを用いるメリットを、
+実例を通して具体的に紹介することが目的です。
+RxJSの内部実装には触れません。</p>
+<p>JavaScriptをある程度書いたことがある人を想定しています。</p>
+<p>RxJSを利用することには以下のような利点があります
+（ここでは、それがどう良いのか分からないというものがあっても大丈夫です）。</p>
+<ul>
+<li>複数のイベントを含む非同期処理を効率よく実装できる</li>
+<li>ある変数の値を更新するときに依存している変数の値の更新を芋づる式に行わせることができる</li>
+<li>相互依存性の低いプログラムになる</li>
+<li>データの加工が直感的に行える</li>
+<li>ロジックと表示処理を分離できる</li>
+
+</ul>
+<p>これらの利点を理解して実用できるようになるために、
+次節で説明するようなデータテーブルアプリケーションを実装してみます。
+比較のために、まずRxJSを使わずに実装し、続いてRxJSを使って実装します。</p>
+<p>キーワード：
+RxJS, Observable, JavaScript, リアクティブプログラミング</p>
+<h2>DataTableApp</h2>
+<p>今回は例として、以下のリンク先のような
+ページネーション機能付きのデータテーブル(DataTableApp)を実装します。</p>
+<p><a href='https://codepen.io/pikohideaki/full/LrLzLX/'>DataTableApp</a></p>
+<h3>DataTableAppの説明</h3>
+<p>DataTableAppの機能と具体的な動作の流れを説明します。</p>
+<p>今回説明に用いるDataTableAppにはページネーション機能のみ持たせています。
+具体的には以下のように動作します。</p>
+<h4>1. データの取得と表示</h4>
+<ol>
+<li><p>まずhttp requestでCSVファイルの内容を取得し<code>csvText</code>に格納します。</p>
+<ul>
+  <li>CSVファイル：<a href='https://dl.dropboxusercontent.com/s/d76vdmr3jafwg3j/testdata.csv'>testdata.csv</a></li>
+  <li>内容は「名前」「Eメールアドレス」「性別」の3列からなる以下のようなCSVファイルです。
+
+    <details>
+      <summary>表示</summary>
+      <div>
+        <pre><code class='language-txt' lang='txt'>1,Helaina Cunnell,hcunnell0@va.gov,Female
+          2,Wenda Teacy,wteacy1@4shared.com,Female
+          3,Fidelia Clayworth,fclayworth2@biblegateway.com,Female
+          4,Carlynne Duesbury,cduesbury3@nba.com,Female
+          5,Burton Bricknall,bbricknall4@altervista.org,Male
+          6,Liana Hearnden,lhearnden5@google.ca,Female
+          
+          ...
+          
+        </code></pre>
+      </div>
+    </details>
+  </li>
+</ul>
+</li>
+<li><p><code>csvText</code>を取得したら関数<code>CSVtoTable</code>により表データに変換し、
+<code>table</code>に格納します。
+<code>table</code>は文字列を要素とする二次元配列です。</p>
+</li>
+<li><p><code>table</code>の用意ができたら、
+1ページあたりの表示行数<code>itemsPerPage</code>とページ番号<code>currentPage</code>の値に従って
+現在のページ部分を切り出したデータ<code>tableSliced</code>を作ります。</p>
+</li>
+<li><p><code>tableSliced</code>を表示します。以降、<code>tableSliced</code>が更新されたときには常に表示の更新を行います。</p>
+</li>
+
+</ol>
+<h4>2. ページネーション</h4>
+<ul>
+<li><p>ページ番号<code>currentPage</code>を指定すると表データの該当するページ部分を表示します。</p>
+<ul>
+<li><code>currentPage</code>を指定するテキストボックスに入力があったら
+<code>currentPage</code>をその値に更新し、
+<code>table</code>から現在のページ部分を切り出したデータで<code>tableSliced</code>を更新し、
+表示します。</li>
+
+</ul>
+</li>
+<li><p>1ページあたりの表示行数<code>itemsPerPage</code>を変更できます（デフォルトは50行）。</p>
+<ul>
+<li><p><code>itemsPerPage</code>を指定するテキストボックスに入力があったら
+全ページ数<code>pageLength</code>と<code>tableSliced</code>を計算し更新します。</p>
+</li>
+<li><p><code>itemsPerPage</code>変更により全ページ数<code>pageLength</code>の値が変更されたら
+ページ番号を1にリセットします。</p>
+<ul>
+<li>例えば1ページ100行表示・8ページ目を選択中に
+1ページ100行表示→200行表示と変更すると、
+全ページ数は5となり、
+ページ番号が8のままだと存在しないページを選択したままになってしまいます。
+ページ番号を1にリセットするのはこれを避けるためです。</li>
+
+</ul>
+</li>
+
+</ul>
+</li>
+
+</ul>
+<h4>テキストボックスの間引き処理</h4>
+<p>テキストボックスの値を</p>
+<p>DataTableAppでは、
+<code>currentPage</code>や<code>itemsPerPage</code>を指定するテキストボックスの値が変わると
+即座にテーブル部分を更新するようにしています。
+しかしそうすると、テキストボックスへ入力中などに短時間に連続して変更するとき、
+何度も<code>tableSliced</code>の更新＆表示処理が行われてしまいます。</p>
+
+<details><summary>間引き処理の有無による動作の違い</summary><div>
+【ここにgif動画を貼る】
+</div></details>
+
+<p>テーブルデータが巨大な場合・表示行数が大きい場合などに負荷がかかってしまいます。
+これを避けるため、テキストボックス入力イベントの発生時の処理は
+300ミリ秒以内に複数回行わないように間引き処理を加えています。</p>
+<h4>処理の流れ</h4>
+<p>このテーブルアプリのデータの処理の流れは次の図のようになります。</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h2>実装</h2>
+<p>具体的な実装について説明します。
+RxJS不使用版・使用版の両方を実装し、後で両者を比較します。</p>
+<h3>JavaScriptの構文についての補足</h3>
+<p>今回使用している構文の一部について簡単な使い方を示します。</p>
+<ul>
+<li><p><code>let</code>や<code>const</code>は変数宣言キーワード。<code>const</code>で宣言した変数は後で再代入できない</p>
+</li>
+<li><p><code>x =&gt; x * x</code>や<code>() =&gt; { /*処理*/ }</code>は関数定義。</p>
+</li>
+<li><p>配列クラスメソッド</p>
+<ul>
+<li><code>map</code>：渡した関数で変換した配列を返す。
+例）<code>[1,2,3].map( x =&gt; x * x )</code>の結果は<code>[1,4,9]</code></li>
+<li><code>filter</code>：渡した判定関数で真となる要素のみからなる配列を返す。
+例）<code>[1,2,3,4,5].filter( x =&gt; x % 2 === 1 )</code>の結果は<code>[1,3,5]</code></li>
+<li><code>every</code>：配列の全要素が条件を満たすか判定する。
+例）<code>[1,3,5,7].every( x =&gt; x % 2 === 1 )</code>の結果は<code>true</code></li>
+<li><code>slice</code>：配列の切り出し。
+例）<code>[1,2,3,4,5].slice(1,3)</code>の結果は<code>[2,3]</code>、
+    <code>[1,2,3,4,5].slice(2,4)</code>の結果は<code>[3,4]</code></li>
+<li><code>join</code>：配列の文字列化。
+例）<code>[2018,7,27].join(&#39;-&#39;)</code>の結果は<code>&quot;2018-7-27&quot;</code></li>
+
+</ul>
+</li>
+<li><p>文字列クラスメソッド</p>
+<ul>
+<li><code>split</code>：文字列の分割と配列化。
+例）<code>&quot;aaa,bbb,ccc&quot;.split(&#39;,&#39;)</code>の結果は<code>[&quot;aaa&quot;,&quot;bbb&quot;,&quot;ccc&quot;]</code></li>
+<li><code>replace</code>：正規表現に最初にマッチする部分を置換。
+例）<code>&quot;aaabbb&quot;.replace(/aa/,&#39;cc&#39;)</code>の結果は<code>&quot;ccabbb&quot;</code></li>
+<li><code>indexOf</code>：部分文字列が最初に現れるインデックスを返す。存在しなければ<code>-1</code>を返す。
+例）<code>abcdef.indexOf(&#39;cd&#39;)</code>の結果は<code>2</code>、
+    <code>abcdef.indexOf(&#39;g&#39;)</code>の結果は<code>-1</code>。</li>
+
+</ul>
+</li>
+<li><p>その他</p>
+<ul>
+<li><code>setTimeout</code>・<code>clearTimeout</code>：処理を予約・解除する
+例）<code>const timerId = setTimeout( alert(&#39;aaa&#39;), 3000 )</code>とすると&#39;aaa&#39;というメッセージのアラートが3秒後に表示される．
+その後3秒以内に<code>clearTimeout(timerId)</code>とすると，このアラート表示処理の予約を解除する．</li>
+<li><code>Math.ceil</code>：天井関数。整数に切り上げた値を返す。
+例）<code>Math.ceil(2.4)</code>は<code>3</code></li>
+
+</ul>
+</li>
+
+</ul>
+<h3>構成</h3>
+<p>サンプルアプリケーションは以下のファイルからなります。</p>
+<ul>
+<li><p>index.html</p>
+</li>
+<li><p>styles.css</p>
+</li>
+<li><p>js</p>
+<ul>
+<li>common.js （共通定義）</li>
+<li>tableApp.js （RxJS不使用版）</li>
+<li>tableApp_rxjs.js （RxJS版）</li>
+
+</ul>
+</li>
+
+</ul>
+<h3>共通定義</h3>
+<p>RxJS不使用版・RxJS使用版で共用するindex.htmlとcommon.jsを説明します。</p>
+<h4>index.html</h4>
+<p>説明に必要な部分のみ載せます。</p>
+<pre><code class='language-html' lang='html'>...
+
+    &lt;!-- 1ページあたりの表示行数とページの指定 --&gt;
+    &lt;div class=&quot;pager&quot;&gt;
+      &lt;div class=&quot;margined-element items-per-page-wrapper&quot;&gt;
+        Items per page (1-1000) : 
+        &lt;div class=&quot;mdl-textfield mdl-js-textfield&quot;&gt;
+          &lt;input class=&quot;mdl-textfield__input&quot; id=&quot;items-per-page&quot;
+            type=&quot;number&quot; min=&quot;1&quot; max=&quot;1000&quot; value=&quot;50&quot;&gt;
+          &lt;label class=&quot;mdl-textfield__label&quot; for=&quot;items-per-page&quot;&gt;
+            items per page
+          &lt;/label&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;margined-element current-page-wrapper&quot;&gt;
+        Page at (1-&lt;span id=&quot;page-length&quot;&gt;1&lt;/span&gt;): 
+        &lt;div class=&quot;mdl-textfield mdl-js-textfield&quot;&gt;
+          &lt;input class=&quot;mdl-textfield__input&quot; id=&quot;current-page&quot;
+            type=&quot;number&quot; min=&quot;1&quot; max=&quot;100&quot; value=&quot;1&quot;&gt;
+          &lt;label class=&quot;mdl-textfield__label&quot; for=&quot;current-page&quot;&gt;
+            page
+          &lt;/label&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;margined-element&quot;&gt;
+      &lt;span id=&quot;range&quot;&gt;&lt;/span&gt;
+    &lt;/div&gt;
+
+    &lt;!-- テーブル部分 --&gt;
+    &lt;table id=&quot;data-table&quot;
+        class=&#39;data-table shadow3px vertical-line&#39;&gt;
+      &lt;thead&gt;
+        &lt;tr&gt;
+          &lt;th&gt;No.&lt;/th&gt;
+          &lt;th&gt;FullName&lt;/th&gt;
+          &lt;th&gt;Email Address&lt;/th&gt;
+          &lt;th&gt;Gender&lt;/th&gt;
+        &lt;/tr&gt;
+      &lt;/thead&gt;
+      &lt;tbody&gt;
+        &lt;!-- jsで書き換え --&gt;
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+
+...
+</code></pre>
+<h4>common.js</h4>
+<p>RxJS不使用版・RxJS使用版で共用する定数や関数を定義します。</p>
+<ul>
+<li>表データCSVファイルのURL</li>
+
+</ul>
+<pre><code class='language-js' lang='js'>const url = &#39;https://dl.dropboxusercontent.com/s/d76vdmr3jafwg3j/testdata.csv&#39;;
+</code></pre>
+<ul>
+<li>テーブルを表示</li>
+
+</ul>
+<pre><code class='language-js' lang='js'>const printTable = ( tableData ) =&gt; {
+  const htmlStr = tableData.map( line =&gt;
+          &#39;&lt;tr&gt;&#39; + line.map( item =&gt; `&lt;td&gt;${item}&lt;/td&gt;` ).join(&#39;&#39;) + &#39;&lt;/tr&gt;&#39; )
+        .join(&#39;\n&#39;);
+
+  const $table = document.getElementById(&#39;data-table&#39;);  // テーブル要素を取得
+  const $tbody = $table.getElementsByTagName(&#39;tbody&#39;)[0];  // tbody部分を取り出す
+  $tbody.innerHTML = htmlStr;  // htmlを書き換え
+};
+</code></pre>
+<ul>
+<li>csv文字列から2次元テーブルを作成</li>
+
+</ul>
+<pre><code class='language-js' lang='js'>const CSVtoTable = ( csvText ) =&gt;
+    csvText.replace(/\n+$/g, &#39;&#39;)  // 末尾の改行は削除
+          .split(&#39;\n&#39;)  // =&gt; 改行ごとに分割
+          .map( line =&gt; line.split(&#39;,&#39;) );  // カンマで分割
+</code></pre>
+<ul>
+<li>テーブルデータと1ページあたりの表示行数からページ数を計算</li>
+
+</ul>
+<pre><code class='language-js' lang='js'>const getPageLength = (tableLength, itemsPerPage) =&gt;
+  Math.ceil( tableLength / itemsPerPage );  // 端数切り上げ
+</code></pre>
+<ul>
+<li>1ページ表示行数とページ番号を受け取ってテーブルの現在のページ部分の範囲のインデックスを計算し、
+その範囲を表すオブジェクト { begin: Number, end: Number } を返す。</li>
+
+</ul>
+<pre><code class='language-js' lang='js'>const getRange = (itemsPerPage, currentPage) =&gt; ({
+  begin: itemsPerPage * (currentPage - 1),
+  end:   itemsPerPage * currentPage
+});
+</code></pre>
+<p>&nbsp;</p>
+<h3>RxJSを使わない実装</h3>
+<p>RxJSを使わない普通のJavaScriptだけの実装例を以下に示します。</p>
+<hr />
+<p>まず、各データに対応する変数を宣言します。</p>
+<pre><code class='language-js' lang='js'>let itemsPerPage = 50;  // 1ページに表示する列数
+let currentPage = 1;    // 現在のページ番号
+let pageLength = 0;     // ページ数
+
+let table = [];         // テーブルデータ
+let tableSliced = [];   // tableの現在のページ部分
+</code></pre>
+<hr />
+<p>データの更新処理を行う関数を2つ定義します。</p>
+<pre><code class='language-js' lang='js'>// pageLengthの更新
+const updatePageLength = () =&gt; {
+  pageLength = getPageLength( table.length, itemsPerPage ); // 端数切り上げ
+  currentPage = 1;  // リセット
+
+  // 表示処理
+  document.getElementById(&#39;page-length&#39;).innerText = (pageLength || 0);
+  document.getElementById(&#39;current-page&#39;).setAttribute(&#39;max&#39;, (pageLength || 1) );
+
+  document.getElementById(&#39;current-page&#39;).value = (currentPage || 1);
+};
+
+// tableSlicedの更新
+const updateSlicedTable = () =&gt; {
+  const range = getRange( (itemsPerPage || 50), (currentPage || 1) );
+
+  tableSliced = table.slice( range.begin, range.end );  // 更新
+
+  // 表示処理
+  document.getElementById(&#39;range&#39;).innerText
+    = `(${range.begin + 1}-${range.end}) of ${table.length} items`;
+
+  printTable( tableSliced );
+};
+</code></pre>
+<hr />
+<p>CSVファイル取得時の処理を登録します。
+CSVファイルのダウンロードが完了したら<code>event =&gt; {...}</code>が実行されます。
+（httpリクエスト送信部分の詳細は分からなければ読み飛ばしてください）</p>
+<pre><code class='language-js' lang='js'>{
+  const req = new XMLHttpRequest();
+  req.open(&#39;get&#39;, url);  // リクエストを初期化
+  req.send();  // リクエストの送信
+  req.addEventListener(&#39;load&#39;, event =&gt; {
+    const csvString = event.target.responseText;  // 取得したデータからのcsvTextの取り出し
+    table = CSVtoTable( csvString );
+    updatePageLength();
+    updateSlicedTable();
+  }); 
+}
+</code></pre>
+<p>1ページあたりの表示行数を指定するテキストボックスの入力時の処理を登録します。
+テキストボックスに入力があるたびに<code>event =&gt; {...}</code>が実行されます。
+間引き処理のためにだいぶ読みづらくなっていますが、やっていることは間引き処理です。
+テキストボックス入力があると、
+<code>clearTimeout</code>により前回予約した処理をキャンセルし、
+<code>setTimeout</code>により300ミリ秒後に処理を予約しなおす、
+ということが行われるので、300ミリ秒入力が止んだときに初めて
+<code>itemsPerPage</code>の更新・<code>updatePageLength()</code>・<code>updateSlicedTable()</code>が実行される、
+という仕組みになっています。</p>
+<pre><code class='language-js' lang='js'>{
+  let timerId;
+  document.getElementById(&#39;items-per-page&#39;)  // items-per-pageの入力欄
+    .addEventListener(&#39;input&#39;, event =&gt; {
+      clearTimeout(timerId);  // 前回の予約をキャンセル
+      timerId = setTimeout( () =&gt; {  // 処理を予約し予約番号をtimerIdに控える
+        itemsPerPage = event.target.valueAsNumber;  // テキストボックス内の値を数値として取出す
+        updatePageLength();
+        updateSlicedTable();
+      }, 300 );
+  });
+}
+</code></pre>
+<hr />
+<p>同様に、現在のページを指定するテキストボックスの入力時の処理を登録します。</p>
+<pre><code class='language-js' lang='js'>{
+  let timerId;
+  document.getElementById(&#39;current-page&#39;)  // current-pageの入力欄
+    .addEventListener(&#39;input&#39;, event =&gt; {
+      clearTimeout(timerId);  // 前回の予約をキャンセル
+      timerId = setTimeout( () =&gt; {  // 処理を予約し予約番号をtimerIdに控える
+        currentPage = event.target.valueAsNumber;  // テキストボックス内の値を数値として取出す
+        updateSlicedTable();
+      }, 300 );
+  });
+}
+</code></pre>
+<p>&nbsp;</p>
+<h3>RxJSの導入</h3>
+<h4>RxJSの手軽な導入方法</h4>
+<ol>
+<li>index.html に以下の1行を追加</li>
+
+</ol>
+<pre><code class='language-html' lang='html'>&lt;script src=&quot;https://unpkg.com/rxjs/bundles/rxjs.umd.min.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<ol>
+<li>JavaScriptのソースコード内で必要なものをimportする</li>
+
+</ol>
+<pre><code class='language-js' lang='js'>const { Observable, fromEvent, combineLatest, merge } = rxjs;
+const { map, startWith, debounceTime, withLatestFrom } = rxjs.operators;
+</code></pre>
+<h3>RxJSを使った実装</h3>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h2>RxJS使用するメリット</h2>
+<p>今回実装したアプリケーションについて
+RxJSを使用した場合とそうでない場合を比較すると、
+RxJSについて以下のようなメリットが挙げられます。</p>
+<ul>
+<li><p>グローバル変数への再代入が無い</p>
+<ul>
+<li>［RxJS不使用］再代入可能なグローバル変数を使っているのでその値が予測しづらい。</li>
+<li>［RxJS使用］RxJSではObservableでデータを表すので、
+その値の定義は変数の宣言＆定義部分で完結している。変数の値が予測しやすい。</li>
+
+</ul>
+</li>
+<li><p>変数とそれに対する処理の依存関係の記述が楽</p>
+<ul>
+<li>［RxJS不使用］ある変数の値が書き換わるとき、
+同時に書き換えなければならない変数やその書き換え実行順序を
+逐一すべて把握していなければならない。</li>
+<li>［RxJS使用］変数はそもそも依存している別のObservableやイベントにより定義された
+Observableなので、先の問題は起こらない。
+依存している変数の値の更新は自動的に芋づる式に行われるので、
+処理の依存関係・実行順序の心配がほとんど無い。</li>
+
+</ul>
+</li>
+<li><p>ロジックと表示処理の記述を分離できる</p>
+<ul>
+<li>［RxJS不使用］変数の更新と表示処理を同時に行うためにそこにまとめて記述する必要があり、
+ソースコードが整理しづらい。
+表示処理がJavaScriptソースコード全体に散らばっているため、
+HTMLソースコードを変えた時の修正が大変。</li>
+<li>［RxJS使用］表示処理部分がまとまって記述されるので、
+読みやすくなる＆HTMLソースコード変更時のJavaScriptソースコードの修正が楽</li>
+
+</ul>
+</li>
+<li><p>パイプ処理を使って直感的にデータの加工が行える</p>
+<ul>
+<li>RxJS不使用］300ms以内の連続入力による
+sliceの複数回実行を抑制する処理（<code>setTimeout</code>や<code>clearTimeout</code>を使った部分）
+がとても読みづらいコードになっていた</li>
+<li>［RxJS使用］<code>pipe</code>メソッドで<code>decounceTime(300)</code>を挟むだけでよい。</li>
+
+</ul>
+</li>
+
+</ul>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h2>おわりに</h2>
+<p>今回はただのhtmlやJavaScriptを直接編集して実装しましたが、
+規模が大きくなってくる場合は何かフレームワークを使った方が
+より効率よく実装できると思います。</p>
+<p>例えばAngularではテンプレート（htmlファイル）内でasync pipeというものを使って
+テンプレート内でsubscribe処理を行うことができるため、
+JavaScript部分がロジックの実装に集中できるようになります。</p>
+<p>&nbsp;</p>
+<h2>補足</h2>
+<ul>
+<li>今回のソースコードを手元で動かしてみたい場合は
+<a href='https://dl.dropboxusercontent.com/s/2avbobjiissm378/DataTableApp_by_rxjs.zip'>こちら</a>
+からダウンロードしてください。
+index.html末尾のJavaScriptのソースコードを読み込む部分のコメントアウトを切り替えるようになっています。</li>
+
+</ul>
+<p>&nbsp;</p>
+<h2>リンク （2018/6/26時点）</h2>
+<ul>
+<li><p><a href='https://rxjs-dev.firebaseapp.com/'>RxJS</a></p>
+</li>
+<li><p><a href='https://github.com/ReactiveX/rxjs'>RxJS Github</a></p>
+</li>
+<li><p><a href='http://rxmarbles.com/'>RxJS Marbles</a>
+RxJSのオペレータの動作を視覚的に学べるサイト</p>
+</li>
+<li><p><a href='https://angular.jp/'>Angular 日本語ドキュメンテーション</a></p>
+</li>
+<li><p><a href='https://mockaroo.com/'>mockadoo</a>
+CSVダミーデータの生成</p>
+</li>
+<li><p><a href='https://getmdl.io/components/index.html#textfields-section'>Material Design Lite</a></p>
+<ul>
+<li>テキストボックスのデザインに使ったライブラリ
+（index.htmlでcssとJavaScriptのソースコードを読み込むだけで使用できます）。</li>
+
+</ul>
+</li>
+
+</ul>
+<p>&nbsp;</p>

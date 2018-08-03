@@ -51,8 +51,7 @@ table.data-table {
   background-color: white;
   border-collapse: collapse;
   font-size: 13px;
-}
-table.data-table.shadow3px {
+
   box-shadow :
   0 3px 4px 0 rgba(0,0,0,.14),
   0 3px 3px -2px rgba(0,0,0,.2),
@@ -68,6 +67,7 @@ table.data-table.shadow3px {
   padding: 6px 12px;
   text-align: center;
   vertical-align: middle;
+  border: 1px solid rgba(0,0,0,.06);
 }
 
 .data-table th {
@@ -77,11 +77,6 @@ table.data-table.shadow3px {
   letter-spacing: 0;
   font-size: 14px;
   color: rgba(0,0,0,.54);
-}
-
-.data-table.vertical-line th,
-.data-table.vertical-line td {
-  border: 1px solid rgba(0,0,0,.06);
 }
 
 .data-table tbody:not(.no-hover-effect) tr:hover {
