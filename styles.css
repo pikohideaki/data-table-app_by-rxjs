@@ -1,6 +1,6 @@
 
 * {
-  font-family: "Helvetica","Arial",sans-serif;
+  font-family: "Helvetica", "Arial", sans-serif;
   box-sizing: border-box;
 }
 
@@ -38,7 +38,7 @@ input[type=number] {
   display: flex;
   flex-direction: row;
 }
-.items-per-page-wrapper,.page-number-wrapper {
+.items-per-page-wrapper,.current-page-wrapper {
   margin: 0 20px;
 }
 

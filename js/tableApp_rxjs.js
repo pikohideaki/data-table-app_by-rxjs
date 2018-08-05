@@ -9,13 +9,37 @@ const { map, startWith, debounceTime, withLatestFrom } = rxjs.operators;
 
 
 
+
+// 「名前」の列のテキストフィールドの値
+const fullName$
+  = fromEvent( $fullName, 'input' )
+      .pipe( map( event => (event.target.value || '') ),
+             debounceTime(300),
+             startWith('') );
+
+// 「Eメールアドレス」の列のテキストフィールドの値
+const emailAddress$
+  = fromEvent( $emailAddress, 'input' )
+      .pipe( map( event => (event.target.value || '') ),
+             debounceTime(300),
+             startWith('') );
+
+// 「性別」の列のテキストフィールドの値
+const gender$
+  = fromEvent( $gender, 'input' )
+      .pipe( map( event => (event.target.value || '') ),
+             debounceTime(300),
+             startWith('') );
+
+
+
 // CSVテキストデータ
 const csvString$ = (() => {
     const req = new XMLHttpRequest();
     req.open('get', url);  // リクエストを初期化
     req.send();  // リクエストの送信
     return fromEvent( req, 'load' )  // 'load'イベントからObservableを作成
-      .pipe( map( event => event.target.responseText ) );  // 取得したデータからのcsvTextの取り出し
+      .pipe( map( event => (event.target.responseText || '') ) );  // 取得したデータからのcsvTextの取り出し
   })();
 
 
@@ -23,11 +47,21 @@ const csvString$ = (() => {
 const table$ = csvString$.pipe( map( CSVtoTable ) );
 
 
+// フィルタ後のテーブルデータ
+const tableFiltered$ = combineLatest(
+    table$,
+    fullName$,
+    emailAddress$,
+    gender$,
+    (table, fullName, emailAddress, gender) =>
+      table.filter( line => filterFn( line, fullName, emailAddress, gender ) ) );
+
+
+
 // 1ページに表示する列数
 const itemsPerPage$
-  = fromEvent( document.getElementById('items-per-page'), 'input' )
-      .pipe( map( event => event.target.valueAsNumber ),  // テキストボックス内の値を数値として取出す
-             map( val => (val || 50) ),
+  = fromEvent( $itemsPerPage, 'input' )
+      .pipe( map( event => (event.target.valueAsNumber || 50) ),  // テキストボックス内の値を数値として取出す
              debounceTime(300),
              startWith(50) );
 
@@ -35,7 +69,7 @@ const itemsPerPage$
 // ページ数
 const pageLength$
   = combineLatest(
-        table$.map( table => table.length ),
+        tableFiltered$.pipe( map( tableFiltered => tableFiltered.length ) ),
         itemsPerPage$,
         getPageLength )
       .pipe( startWith(0) );
@@ -44,14 +78,14 @@ const pageLength$
 // ページ番号
 const currentPage$
   = merge(
-      fromEvent( document.getElementById('current-page'), 'input' )
-        .pipe( map( event => event.target.valueAsNumber ),  // テキストボックス内の値を数値として取出す
+      fromEvent( $currentPage, 'input' )
+        .pipe( map( event => (event.target.valueAsNumber || 1) ),  // テキストボックス内の値を数値として取出す
                withLatestFrom( pageLength$ ),
                map( ([currentPage, pageLength]) =>
                  ( 1 <= currentPage && currentPage <= pageLength ? currentPage : 1) ),  // 範囲外のページを指定したときは1に修正する
                debounceTime(300)
         ),
-      pageLength$.pipe( map( _ => 1 ) )
+      pageLength$.pipe( map( _ => 1 ) )  // pageLengthが変わったときはcurrentPageを1に
     ).pipe( startWith(1) );
 
 
@@ -63,21 +97,24 @@ const range$
 
 // tableの表示するページ部分
 const tableSliced$
-  = range$.pipe( withLatestFrom( table$ ),
-      map( ([range, table]) => table.slice( range.begin, range.end ) ) );
+  = range$.pipe(
+        withLatestFrom( tableFiltered$ ),
+        map( ([range, tableFiltered]) =>
+              tableFiltered.slice( range.begin, range.end ) )
+      );
 
 
 // 表示処理
 {
   // ページ数を表示
   pageLength$.subscribe( pageLength => {
-    document.getElementById('page-length').innerText = (pageLength || 0);
-    document.getElementById('current-page').setAttribute('max', (pageLength || 1));
+    $pageLength.innerText = pageLength;
+    $currentPage.setAttribute('max', pageLength);
   });
 
   // ページ番号を指定するテキストボックスの値を更新
   currentPage$.subscribe( currentPage => {
-    document.getElementById('current-page').valueAsNumber = (currentPage || 1);
+    $currentPage.valueAsNumber = currentPage;
   });
 
   // テーブルを表示
@@ -85,8 +122,7 @@ const tableSliced$
     printTable( tableSliced );
   });
 
-  range$.pipe( withLatestFrom( table$ ) ).subscribe( ([range, table]) => {
-    document.getElementById('range').innerText
-      = `(${range.begin + 1}-${range.end}) of ${table.length} items`;
+  range$.pipe( withLatestFrom( tableFiltered$ ) ).subscribe( ([range, tableFiltered]) => {
+    $range.innerText = `(${range.begin + 1}-${range.end}) of ${tableFiltered.length} items`;
   })
 }

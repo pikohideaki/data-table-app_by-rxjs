@@ -14,16 +14,13 @@
 
   <div class="margined-element">
 
-    <!-- 1ページあたりの表示行数とページの指定 -->
     <div class="pager">
       <div class="margined-element items-per-page-wrapper">
         Items per page (1-1000) : 
         <div class="mdl-textfield mdl-js-textfield">
           <input class="mdl-textfield__input" id="items-per-page"
             type="number" min="1" max="1000" value="50">
-          <label class="mdl-textfield__label" for="items-per-page">
-            items per page
-          </label>
+          <label class="mdl-textfield__label" for="items-per-page"></label>
         </div>
       </div>
       <div class="margined-element current-page-wrapper">
@@ -31,9 +28,7 @@
         <div class="mdl-textfield mdl-js-textfield">
           <input class="mdl-textfield__input" id="current-page"
             type="number" min="1" max="100" value="1">
-          <label class="mdl-textfield__label" for="current-page">
-            page
-          </label>
+          <label class="mdl-textfield__label" for="current-page"></label>
         </div>
       </div>
     </div>
@@ -43,14 +38,28 @@
     </div>
 
     <!-- テーブル部分 -->
-    <table id="data-table"
-        class='data-table shadow3px vertical-line'>
+    <table id="data-table" class='data-table'>
       <thead>
         <tr>
           <th>No.</th>
-          <th>FullName</th>
-          <th>Email Address</th>
-          <th>Gender</th>
+          <th>
+            <div class="mdl-textfield mdl-js-textfield header">
+              <input class="mdl-textfield__input" type="text" id="full-name">
+              <label class="mdl-textfield__label" for="full-name">FullName</label>
+            </div>
+          </th>
+          <th>
+            <div class="mdl-textfield mdl-js-textfield header">
+              <input class="mdl-textfield__input" type="text" id="email-address">
+              <label class="mdl-textfield__label" for="email-address">Email Address</label>
+            </div>
+          </th>
+          <th>
+            <div class="mdl-textfield mdl-js-textfield header">
+              <input class="mdl-textfield__input" type="text" id="gender">
+              <label class="mdl-textfield__label" for="gender">Gender</label>
+            </div>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -61,8 +70,8 @@
 
   <script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js"></script>
   <script src="./js/common.js"></script>
-  <!-- <script src="./js/tableApp.js"></script> -->
-  <script src="./js/tableApp_rxjs.js"></script>
+  <script src="./js/tableApp.js"></script>
+  <!-- <script src="./js/tableApp_rxjs.js"></script> -->
 </body>
 
 </html>
