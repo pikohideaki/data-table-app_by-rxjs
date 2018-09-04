@@ -30,14 +30,14 @@ const updatePageLength = () => {
 
 
 // tableFilteredの更新
-const updateFilteredTable = () => {
+const updateTableFiltered = () => {
   tableFiltered = table.filter( line => filterFn( line, fullName, emailAddress, gender ) );
   updatePageLength();
 };
 
 
 // tableSlicedの更新
-const updateSlicedTable = () => {
+const updateAndPrintTableSliced = () => {
   const range = getRange( itemsPerPage, currentPage );
 
   tableSliced = tableFiltered.slice( range.begin, range.end );  // 更新
@@ -59,8 +59,8 @@ const updateSlicedTable = () => {
     clearTimeout(timerId);
     timerId = setTimeout( () => {
       fullName = (event.target.value || '');
-      updateFilteredTable();
-      updateSlicedTable();
+      updateTableFiltered();
+      updateAndPrintTableSliced();
     }, 300 );
   });
 }
@@ -71,8 +71,8 @@ const updateSlicedTable = () => {
     clearTimeout(timerId);
     timerId = setTimeout( () => {
       emailAddress = (event.target.value || '');
-      updateFilteredTable();
-      updateSlicedTable();
+      updateTableFiltered();
+      updateAndPrintTableSliced();
     }, 300 );
   });
 }
@@ -83,8 +83,8 @@ const updateSlicedTable = () => {
     clearTimeout(timerId);
     timerId = setTimeout( () => {
       gender = (event.target.value || '');
-      updateFilteredTable();
-      updateSlicedTable();
+      updateTableFiltered();
+      updateAndPrintTableSliced();
     }, 300 );
   });
 }
@@ -96,8 +96,8 @@ const updateSlicedTable = () => {
   req.addEventListener('load', event => {
     const csvString = (event.target.responseText || '');  // 取得したデータからのcsvTextの取り出し
     table = CSVtoTable( csvString );
-    updateFilteredTable();
-    updateSlicedTable();
+    updateTableFiltered();
+    updateAndPrintTableSliced();
   }); 
 }
 
@@ -109,7 +109,7 @@ const updateSlicedTable = () => {
     timerId = setTimeout( () => {  // 処理を予約し予約番号をtimerIdに控える
       itemsPerPage = (event.target.valueAsNumber || 50);  // テキストボックス内の値を数値として取出す
       updatePageLength();
-      updateSlicedTable();
+      updateAndPrintTableSliced();
     }, 300 );
   });
 }
@@ -120,7 +120,7 @@ const updateSlicedTable = () => {
       clearTimeout(timerId);  // 前回の予約をキャンセル
       timerId = setTimeout( () => {  // 処理を予約し予約番号をtimerIdに控える
         currentPage = (event.target.valueAsNumber || 1);  // テキストボックス内の値を数値として取出す
-        updateSlicedTable();
+        updateAndPrintTableSliced();
       }, 300 );
   });
 }
